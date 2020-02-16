@@ -4,6 +4,23 @@
 
 #include "stdint.h"
 
+//***********************************
+TbitInput::TbitInput(int iIndex, QWidget *parent) : QCheckBox(parent)
+{
+    this->setText(tr("bit %1").arg(iIndex));
+    if (iIndex >= 0)
+    {
+       this->move(100,iIndex*BIT_INPUT_PITCH);
+    }
+
+}
+
+TbitInput::~TbitInput()
+{
+
+}
+//*********************************
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -12,6 +29,19 @@ MainWindow::MainWindow(QWidget *parent) :
     hChannel = NULL;
     iCommOK = -1;
     iTimerID = this->startTimer(1000);
+
+
+    QGridLayout *bitInputsLayout = new QGridLayout(ui->centralWidget);
+
+    //test adding widgets
+    //TbitInput *bitInput1 = new TbitInput(-1, ui->centralWidget);
+    for (int i = 0; i < NUMBER_OF_BIT_INPUTS; ++i)
+    {
+      bitInputs[i] =  new TbitInput(i);
+      //bitInputsLayout->addWidget(bitInputs[i], i, 0);
+      ui->inputsLayout->addWidget(bitInputs[i]);
+    }
+    //bitInputsLayout->setGeometry(QRect(50,50,50,50));
 }
 
 MainWindow::~MainWindow()
@@ -28,16 +58,16 @@ void MainWindow::on_Btn_TestBoard_clicked()
      init.init_options        = CIFX_DRIVER_INIT_AUTOSCAN;
      init.iCardNumber         = 0;
      init.fEnableCardLocking  = 0;
-     init.base_dir            = NULL;
+     init.base_dir            = nullptr;
      init.poll_interval       = 0;
      init.poll_StackSize      = 0;   /* set to 0 to use default */
      init.trace_level         = 255;
      init.user_card_cnt       = 0;
-     init.user_cards          = NULL;
+     init.user_cards          = nullptr;
    }
 
 
-   CIFXHANDLE hDriver = NULL;
+   CIFXHANDLE hDriver = nullptr;
    int32_t lRet = CIFX_NO_ERROR;
    lRet = cifXDriverInit(&init);
    qDebug() << "DRV INIT" << lRet <<  QString::number(lRet, 16 ).toUpper();
@@ -47,7 +77,7 @@ void MainWindow::on_Btn_TestBoard_clicked()
 
    DRIVER_INFORMATION tDriverInfo;
    memset(&tDriverInfo, 0, sizeof(tDriverInfo));
-   lRet = xDriverGetInformation(NULL, sizeof(tDriverInfo), &tDriverInfo);
+   lRet = xDriverGetInformation(nullptr, sizeof(tDriverInfo), &tDriverInfo);
    qDebug() << "DRV INFO" << lRet <<  QString::number(lRet, 16 ).toUpper();
 
    char szDrvVersion[32] = "";
@@ -62,7 +92,7 @@ void MainWindow::on_Btn_Data_clicked()
     int32_t lRet = CIFX_NO_ERROR;
     //Open channel
 
-    lRet = xChannelOpen(NULL, (char *)("cifX0"), 0, &hChannel);
+    lRet = xChannelOpen(nullptr, (char *)("cifX0"), 0, &hChannel);
     qDebug() << "CH OPEN" << lRet <<  QString::number(lRet, 16 ).toUpper();
 
     //channel info
@@ -98,6 +128,7 @@ void MainWindow::on_Btn_Data_clicked()
 
 void MainWindow::timerEvent(QTimerEvent *event)
 {
+    return;
     if (event->timerId() == iTimerID)
     {
         qDebug() << "TimerEvent" << hChannel << iCommOK;
@@ -106,7 +137,7 @@ void MainWindow::timerEvent(QTimerEvent *event)
         if (ui->cbBitComm->checkState()) abSendData[0] = 0x80;
         else                             abSendData[0] = 0x00;
 
-        if ((hChannel != NULL) && (iCommOK == CIFX_NO_ERROR))
+        if ((hChannel != nullptr) && (iCommOK == CIFX_NO_ERROR))
         {
            uint32_t lRet = CIFX_NO_ERROR;
            lRet = xChannelIOWrite(hChannel, 0, 0, sizeof(abSendData), abSendData, 10);
@@ -115,4 +146,21 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
         }
     }
+}
+
+
+#define SET_IND(ind, status)\
+{\
+    if  ((status)) ui->ind->setStyleSheet("background-color:red;");\
+    else           ui->ind->setStyleSheet("background-color: green;");\
+}
+
+void MainWindow::on_btnTestIo_clicked()
+{
+    if  (ui->cb_b0->isChecked()) ui->Ind_b0->setStyleSheet("background-color:red;");
+    else                         ui->Ind_b0->setStyleSheet("background-color: green;");
+
+    SET_IND(Ind_b1, ui->cb_b1->isChecked());
+    SET_IND(Ind_b2, ui->cb_b2->isChecked());
+    SET_IND(Ind_b3, ui->cb_b3->isChecked());
 }
